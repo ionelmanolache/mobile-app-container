@@ -27,6 +27,18 @@ class _WebViewStackState extends State<WebViewStack> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+        body: SafeArea(child: Builder(builder: (BuildContext context) {
+      return buildStack(context);
+    })));
+  }
+
+  // @override
+  // Widget build(BuildContext context) {
+  //   return buildStack(context);
+  // }
+
+  Widget buildStack(BuildContext context) {
     return Stack(
       children: [
         WebView(
