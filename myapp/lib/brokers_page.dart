@@ -15,11 +15,13 @@ class _BrokersPageState extends State<BrokersPage> {
 
   var _brokers = {
     'comdirect-PROD': 'https://cfdapp.comdirect.de/lp/cfdapp/login',
-    'flatex-PROD': 'https://konto.flatex.de/flatex-cfd-login',
+    'flatex-PROD': 'https://konto.flatex.de/flatex-cfd-login/',
     'prelive2-comdirect':
         'https://cfd2.staging.sgmarkets.com/fortune-web-server/static/fortune-login/mobilelogin.html',
     'prelive2-login':
-        'https://cfd2.staging.sgmarkets.com/fortune-web-server/static/fortune-login/index.html'
+        'https://cfd2.staging.sgmarkets.com/fortune-web-server/static/fortune-login/index.html',
+    'pdf':
+        'https://docs.certificate.socgen.com/DotiRestService/rest/doti/pdf/get/CFD_ADS_GY-TRADER-SHORT/KID_CFD/CBDE/GERMAN'
   };
 
   @override

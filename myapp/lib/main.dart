@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'brokers_page.dart';
 import 'home.dart';
+//import 'package:permission_handler/permission_handler.dart';
 
-void main() => runApp(const MyApp());
+Future<void> main() async {
+  //await Permission.storage.request();
+
+  //var p1 = Permission.accessMediaLocation.value;
+  //var p2 = Permission.manageExternalStorage.value;
+  //print('**** accessMediaLocation = $p1');
+  //print('**** manageExternalStorage = $p2');
+
+  runApp(const MyApp());
+}
 //void main() => runApp(const MaterialApp(home: const BrokersPage()));
 
 class MyApp extends StatelessWidget {

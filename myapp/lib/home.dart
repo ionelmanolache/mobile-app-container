@@ -17,13 +17,31 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final controller = Completer<WebViewController>();
+  //buildWebViewStack()
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         body: SafeArea(child: Builder(builder: (BuildContext context) {
-      return WebViewStack(
-          controller: controller, url: EnvironmentConfig.brokerUrl);
+      return buildWebViewStack(context);
     })));
+  }
+
+  Widget buildStack(BuildContext context) {
+    return Stack(
+      //alignment: Alignment.center,
+      children: [
+        buildWebViewStack(context),
+        // if (loadingPercentage < 100)
+        //   LinearProgressIndicator(
+        //     value: loadingPercentage / 100.0,
+        //   ),
+      ],
+    );
+  }
+
+  Widget buildWebViewStack(BuildContext context) {
+    return WebViewStack(
+        controller: controller, url: EnvironmentConfig.brokerUrl);
   }
 }
