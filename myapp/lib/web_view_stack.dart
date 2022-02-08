@@ -58,11 +58,35 @@ class _WebViewStackState extends State<WebViewStack> {
     );
   }
 
+  JavascriptChannel _fingerprintJavascriptChannel(BuildContext context) {
+    return JavascriptChannel(
+        name: 'Fingerprint',
+        onMessageReceived: (JavascriptMessage jsmmessage) {
+          print(jsmmessage.message);
+          // ignore: deprecated_member_use
+          // Scaffold.of(context).showSnackBar(
+          //   SnackBar(content: Text(message.message)),
+          // );
+        });
+  }
+
+  Future<void> _onAddToCache(
+      WebViewController controller, BuildContext context) async {
+    await controller.runJavascript(
+        'caches.open("test_caches_entry"); localStorage["test_localStorage"] = "dummy_entry";');
+    // ignore: deprecated_member_use
+    Scaffold.of(context).showSnackBar(const SnackBar(
+      content: Text('Added a test entry to cache.'),
+    ));
+  }
+
   Widget buildWebView(BuildContext context) {
     return WebView(
       initialUrl: widget.url,
       javascriptMode: JavascriptMode.unrestricted,
       zoomEnabled: true,
+      javascriptChannels:
+          <JavascriptChannel>[_fingerprintJavascriptChannel(context)].toSet(),
       //initialMediaPlaybackPolicy: AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
 
       //pluginState: WebSettings.PluginState.ON,
@@ -158,8 +182,9 @@ class _WebViewStackState extends State<WebViewStack> {
       children: [
         WebView(
           initialUrl: widget.url,
-          javascriptMode: JavascriptMode.unrestricted,
           zoomEnabled: true,
+          javascriptMode: JavascriptMode.unrestricted,
+
           //initialMediaPlaybackPolicy: AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
 
           //pluginState: WebSettings.PluginState.ON,
@@ -171,7 +196,6 @@ class _WebViewStackState extends State<WebViewStack> {
           onWebViewCreated: (webViewController) {
             print('*** onWebViewCreated, $webViewController');
             webViewController.clearCache();
-            //webViewController.reload();
             widget.controller.complete(webViewController);
             this._webViewController = webViewController;
           },
