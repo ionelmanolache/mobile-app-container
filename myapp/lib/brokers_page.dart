@@ -14,6 +14,7 @@ class _BrokersPageState extends State<BrokersPage> {
   final _controller = Completer<WebViewController>();
 
   var _brokers = {
+    'dev': 'https://ionelmanolache.github.io/',
     'comdirect-PROD': 'https://cfdapp.comdirect.de/lp/cfdapp/login',
     'flatex-PROD': 'https://konto.flatex.de/flatex-cfd-login/',
     'prelive2-comdirect':
@@ -35,7 +36,7 @@ class _BrokersPageState extends State<BrokersPage> {
           child: Stack(
             children: [
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 96),
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,

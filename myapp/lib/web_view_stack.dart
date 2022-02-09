@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+//import 'package:flutter/services.dart';
 //import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 //import 'package:pdf_viewer_plugin/pdf_viewer_plugin.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+//import 'package:local_auth/local_auth.dart';
+import 'local_auth_api.dart';
 
 class WebViewStack extends StatefulWidget {
   const WebViewStack({required this.controller, required this.url, Key? key})
@@ -19,17 +22,25 @@ class WebViewStack extends StatefulWidget {
 }
 
 class _WebViewStackState extends State<WebViewStack> {
+  bool _hasBioSensor = false;
+  bool _isDispatchPageFinished = false;
+
+  //LocalAuthentication authentication = LocalAuthentication();
+
   var loadingPercentage = 0;
   var _webViewController;
 //...later on, probably in response to some event:
 //_webViewController.loadUrl('http://dartlang.org/');
 
   @override
-  void initState() {
+  initState() {
     super.initState();
+    //_hasBioSensor = await LocalAuthApi.hasBiometrics();
     //if (Platform.isAndroid) {
     // WebView.platform = SurfaceAndroidWebView();
     //}
+    // call method immediately when app launch
+    _checkBiometrics();
   }
 
   @override
@@ -45,6 +56,15 @@ class _WebViewStackState extends State<WebViewStack> {
   //   return buildStack(context);
   // }
 
+  _checkBiometrics() async {
+    _hasBioSensor = await LocalAuthApi.hasBiometrics();
+  }
+
+  Future<bool> _checkAuth() async {
+    return await LocalAuthApi.authenticate();
+    //return isAuth;
+  }
+
   Widget buildStack(BuildContext context) {
     return Stack(
       //alignment: Alignment.center,
@@ -58,16 +78,25 @@ class _WebViewStackState extends State<WebViewStack> {
     );
   }
 
-  JavascriptChannel _fingerprintJavascriptChannel(BuildContext context) {
+  JavascriptChannel _appJavascriptChannel(BuildContext context) {
     return JavascriptChannel(
-        name: 'Fingerprint',
+        name: 'MobileApp',
         onMessageReceived: (JavascriptMessage jsmmessage) {
           print(jsmmessage.message);
-          // ignore: deprecated_member_use
-          // Scaffold.of(context).showSnackBar(
-          //   SnackBar(content: Text(message.message)),
-          // );
+          if (_hasBioSensor &&
+              jsmmessage.message.length == 7 &&
+              'checkid' == jsmmessage.message) {
+            _onCheckidstatus(_webViewController, context);
+          }
         });
+  }
+
+  Future<void> _onCheckidstatus(
+      WebViewController controller, BuildContext context) async {
+    bool isAuth = await _checkAuth();
+    String jsScript =
+        'checkidStatus({checkidstatus:$isAuth, biometrics:$_hasBioSensor})';
+    await controller.runJavascript(jsScript);
   }
 
   Future<void> _onAddToCache(
@@ -80,27 +109,42 @@ class _WebViewStackState extends State<WebViewStack> {
     ));
   }
 
+  Future<void> _dispatchPageFinished(
+      WebViewController controller, BuildContext context) async {
+    print('dispatchPageFinished (1)');
+    if (!_isDispatchPageFinished) {
+      print('dispatchPageFinished (2)');
+
+      await controller.runJavascript(
+          'window.document.dispatchEvent(new CustomEvent("testevent", {details:"*hello*"}));');
+
+      String jsScript =
+          'devicepagefinished({isAvailable:$_hasBioSensor, keyusername:"savedUsername", keypassword:"savedPassword"});';
+      print('jsScript=$jsScript');
+
+      await controller.runJavascript(jsScript);
+
+      //_isDispatchPageFinished = true;
+    }
+    // ignore: deprecated_member_use
+  }
+
   Widget buildWebView(BuildContext context) {
     return WebView(
       initialUrl: widget.url,
       javascriptMode: JavascriptMode.unrestricted,
       zoomEnabled: true,
       javascriptChannels:
-          <JavascriptChannel>[_fingerprintJavascriptChannel(context)].toSet(),
-      //initialMediaPlaybackPolicy: AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
-
-      //pluginState: WebSettings.PluginState.ON,
-      // allowFileAccessFromFileURLs: true,
-      // allowUniversalAccessFromFileURLs: true,
-      // allowContentAccess: true,
-      // allowFileAccess: true,
-
+          <JavascriptChannel>[_appJavascriptChannel(context)].toSet(),
       onWebViewCreated: (webViewController) {
         print('*** onWebViewCreated, $webViewController');
-        webViewController.clearCache();
-        //webViewController.reload();
-        widget.controller.complete(webViewController);
-        this._webViewController = webViewController;
+        setState(() {
+          _webViewController = webViewController;
+        });
+        // webViewController.clearCache();
+
+        //widget.controller.complete(webViewController);
+        //this._webViewController = webViewController;
       },
       onWebResourceError: (error) {
         print('***** Error: $error');
@@ -135,6 +179,10 @@ class _WebViewStackState extends State<WebViewStack> {
         setState(() {
           loadingPercentage = 100;
         });
+        final path = Uri.parse(url).host;
+        if (path.contains('ionelmanolache')) {
+          _dispatchPageFinished(this._webViewController, context);
+        }
       },
       navigationDelegate: (navigation) async {
         print('***navigationDelegate, $navigation');
