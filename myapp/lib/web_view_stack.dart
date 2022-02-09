@@ -112,20 +112,22 @@ class _WebViewStackState extends State<WebViewStack> {
   Future<void> _dispatchPageFinished(
       WebViewController controller, BuildContext context) async {
     print('dispatchPageFinished (1)');
-    if (!_isDispatchPageFinished) {
-      print('dispatchPageFinished (2)');
+    // if (!_isDispatchPageFinished) {
+    //   print('dispatchPageFinished (2)');
 
-      await controller.runJavascript(
-          'window.document.dispatchEvent(new CustomEvent("testevent", {details:"*hello*"}));');
+    await controller.runJavascript(
+        'window.document.dispatchEvent(new CustomEvent("testevent", {details:"hello"}));');
 
-      String jsScript =
-          'devicepagefinished({isAvailable:$_hasBioSensor, keyusername:"savedUsername", keypassword:"savedPassword"});';
-      print('jsScript=$jsScript');
+    String jsScript =
+        'devicepagefinished({isAvailable:$_hasBioSensor, keyusername:"savedUsername", keypassword:"savedPassword"});';
+    // String jsScript =
+    //     'window.document.dispatchEvent(new CustomEvent("devicepagefinished", {isAvailable:$_hasBioSensor, keyusername:savedUsername, keypassword:savedPassword}));';
+    print('jsScript=$jsScript');
 
-      await controller.runJavascript(jsScript);
+    await controller.runJavascript(jsScript);
 
-      //_isDispatchPageFinished = true;
-    }
+    //_isDispatchPageFinished = true;
+    //}
     // ignore: deprecated_member_use
   }
 
@@ -173,14 +175,16 @@ class _WebViewStackState extends State<WebViewStack> {
         });
       },
       onPageFinished: (url) {
+        final path = Uri.parse(url).path;
         if (kDebugMode) {
           print('Page finished loading: $url');
         }
         setState(() {
           loadingPercentage = 100;
         });
-        final path = Uri.parse(url).host;
-        if (path.contains('ionelmanolache')) {
+
+        if (url.indexOf('ionelmanolache') > -1 ||
+            url.indexOf('fortune-login') > -1) {
           _dispatchPageFinished(this._webViewController, context);
         }
       },

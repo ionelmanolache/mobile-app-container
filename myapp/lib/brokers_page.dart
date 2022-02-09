@@ -17,10 +17,12 @@ class _BrokersPageState extends State<BrokersPage> {
     'dev': 'https://ionelmanolache.github.io/',
     'comdirect-PROD': 'https://cfdapp.comdirect.de/lp/cfdapp/login',
     'flatex-PROD': 'https://konto.flatex.de/flatex-cfd-login/',
-    'prelive2-comdirect':
+    'prelive2-mIFEv1':
         'https://cfd2.staging.sgmarkets.com/fortune-web-server/static/fortune-login/mobilelogin.html',
     'prelive2-login':
         'https://cfd2.staging.sgmarkets.com/fortune-web-server/static/fortune-login/index.html',
+    'prelive2-mIFEv2':
+        'https://cfd2.staging.sgmarkets.com/fortune-web-server/static/fortune-login/mobilelogin2.html',
     'pdf':
         'https://docs.certificate.socgen.com/DotiRestService/rest/doti/pdf/get/CFD_ADS_GY-TRADER-SHORT/KID_CFD/CBDE/GERMAN'
   };
