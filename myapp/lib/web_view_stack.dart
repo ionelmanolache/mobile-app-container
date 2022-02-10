@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 //import 'package:flutter/services.dart';
 //import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 //import 'package:pdf_viewer_plugin/pdf_viewer_plugin.dart';
@@ -175,7 +176,7 @@ class _WebViewStackState extends State<WebViewStack> {
         });
       },
       onPageFinished: (url) {
-        final path = Uri.parse(url).path;
+        //final path = Uri.parse(url).path;
         if (kDebugMode) {
           print('Page finished loading: $url');
         }
@@ -190,6 +191,13 @@ class _WebViewStackState extends State<WebViewStack> {
       },
       navigationDelegate: (navigation) async {
         print('***navigationDelegate, $navigation');
+        if (navigation.url.contains('documents') ||
+            navigation.url.contains('pdf')) {
+          await launch(navigation.url);
+          return NavigationDecision.prevent;
+        } else {
+          return NavigationDecision.navigate;
+        }
         // if (navigation.url.endsWith('.pdf') || navigation.url.contains('pdf')) {
         //   File file = await DefaultCacheManager().getSingleFile(navigation.url);
         //   var filePath = file.path;
