@@ -5,7 +5,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'web_view_stack.dart';
 
 class EnvironmentConfig {
-  static const brokerUrl = String.fromEnvironment('BROKER_URL');
+  static const brokerUrl = String.fromEnvironment('BROKER_URL',
+      defaultValue: 'https://ionelmanolache.github.io/');
 }
 
 class HomePage extends StatefulWidget {
@@ -44,25 +45,6 @@ class _HomePageState extends State<HomePage> {
     })));
   }
 
-  JavascriptChannel _fingerprintJavascriptChannel(BuildContext context) {
-    return JavascriptChannel(
-        name: 'Findgerprint',
-        onMessageReceived: (JavascriptMessage message) {
-          // ignore: deprecated_member_use
-          Scaffold.of(context).showSnackBar(
-            SnackBar(content: Text(message.message)),
-          );
-        });
-  }
-
-  Widget createRedWidget() {
-    return Container(
-      width: 100,
-      height: 100,
-      color: Colors.red,
-    );
-  }
-
   Widget buildStack(BuildContext context) {
     return Stack(
       //alignment: Alignment.center,
@@ -80,4 +62,24 @@ class _HomePageState extends State<HomePage> {
     return WebViewStack(
         controller: controller, url: EnvironmentConfig.brokerUrl);
   }
+
+  // JavascriptChannel _fingerprintJavascriptChannel(BuildContext context) {
+  //   return JavascriptChannel(
+  //       name: 'Findgerprint',
+  //       onMessageReceived: (JavascriptMessage message) {
+  //         // ignore: deprecated_member_use
+  //         Scaffold.of(context).showSnackBar(
+  //           SnackBar(content: Text(message.message)),
+  //         );
+  //       });
+  // }
+
+  // Widget createRedWidget() {
+  //   return Container(
+  //     width: 100,
+  //     height: 100,
+  //     color: Colors.red,
+  //   );
+  // }
+
 }

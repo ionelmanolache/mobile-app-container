@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script>
+
+        plugins = {};
+        //console.log(plugins);
+        plugins.fingerprint = {};
+        //console.log(plugins);
+
+        plugins.fingerprint.isAvailable = function (successCallback, errorCallback) {
+            //MobileApp.exec("isAvailable");
+            console.log('isAvailable');
+            if (true) {
+                successCallback();
+            } else {
+                errorCallback();
+            }
+        }
+        //console.log(plugins);
+
+        window.plugins.fingerprint.isAvailable(function () {
+            console.log('isAvailable=TRUE');
+        }, function () {
+            console.log('isAvailable=FALSE');
+        });
+
+        
+        window.document.addEventListener("myevent", function(e){
+            console.log('EVENT test, ', e.detail);
+        });//, false);
+        var data = {name:"ima", age:40};
+        window.document.dispatchEvent(new CustomEvent('myevent', {detail: data}));
+
+        function createEvent(type, data) {
+            var event = document.createEvent('Events');
+            event.initEvent(type, false, false);
+            if (data) {
+                for (var i in data) {
+                    if (data.hasOwnProperty(i)) {
+                        event[i] = data[i];
+                    }
+                }
+            }
+            return event;
+        }
+        
+        function createCustomEvent(type, data) {
+            var event = new CustomEvent('', {detail: data});//.createEvent('Events');
+            
+            return event;
+        }        
+    </script>
+</head>
+
+<body>
+    hello
+</body>
+
+</html>

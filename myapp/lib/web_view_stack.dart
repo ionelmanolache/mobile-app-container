@@ -110,22 +110,38 @@ class _WebViewStackState extends State<WebViewStack> {
     ));
   }
 
+  // Build the javascript injection string to override css
+  Future<String> jsInjectionString(BuildContext context, String asset) async {
+    String cssOverride = await loadStringAsset(context, asset);
+    return "const appJs = document.createElement('script');"
+        "appJs.textContent = `$cssOverride`;"
+        "document.head.append(appJs);";
+  }
+
+  // Load a string asset
+  Future<String> loadStringAsset(BuildContext context, String asset) async {
+    return await DefaultAssetBundle.of(context).loadString(asset);
+  }
+
   Future<void> _dispatchPageFinished(
-      WebViewController controller, BuildContext context) async {
+      WebViewController _webController, BuildContext context) async {
     print('dispatchPageFinished (1)');
     // if (!_isDispatchPageFinished) {
     //   print('dispatchPageFinished (2)');
 
-    await controller.runJavascript(
-        'window.document.dispatchEvent(new CustomEvent("testevent", {details:"hello"}));');
+    String appJs = await jsInjectionString(context, 'assets/app.js');
+    _webController.runJavascript(appJs);
 
-    String jsScript =
-        'devicepagefinished({isAvailable:$_hasBioSensor, keyusername:"savedUsername", keypassword:"savedPassword"});';
+    await _webController.runJavascript(
+        'window.document.dispatchEvent(createEvent("deviceready", {hasBioSensor:$_hasBioSensor}));');
+
     // String jsScript =
-    //     'window.document.dispatchEvent(new CustomEvent("devicepagefinished", {isAvailable:$_hasBioSensor, keyusername:savedUsername, keypassword:savedPassword}));';
-    print('jsScript=$jsScript');
+    //     'devicepagefinished({isAvailable:$_hasBioSensor, keyusername:"savedUsername", keypassword:"savedPassword"});';
+    // // String jsScript =
+    // //     'window.document.dispatchEvent(new CustomEvent("devicepagefinished", {isAvailable:$_hasBioSensor, keyusername:savedUsername, keypassword:savedPassword}));';
+    // print('jsScript=$jsScript');
 
-    await controller.runJavascript(jsScript);
+    // await _webController.runJavascript(jsScript);
 
     //_isDispatchPageFinished = true;
     //}
