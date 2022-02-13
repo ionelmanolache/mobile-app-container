@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 //import 'package:pdf_viewer_plugin/pdf_viewer_plugin.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 //import 'package:local_auth/local_auth.dart';
-import 'local_auth_api.dart';
+import 'app_auth_api.dart';
 
 class WebViewStack extends StatefulWidget {
   const WebViewStack({required this.controller, required this.url, Key? key})
@@ -26,22 +25,13 @@ class _WebViewStackState extends State<WebViewStack> {
   bool _hasBioSensor = false;
   bool _isDispatchPageFinished = false;
 
-  //LocalAuthentication authentication = LocalAuthentication();
-
   var loadingPercentage = 0;
   var _webViewController;
-//...later on, probably in response to some event:
-//_webViewController.loadUrl('http://dartlang.org/');
 
   @override
   initState() {
     super.initState();
-    //_hasBioSensor = await LocalAuthApi.hasBiometrics();
-    //if (Platform.isAndroid) {
-    // WebView.platform = SurfaceAndroidWebView();
-    //}
-    // call method immediately when app launch
-    _checkBiometrics();
+    //_checkBiometrics();
   }
 
   @override
@@ -57,15 +47,6 @@ class _WebViewStackState extends State<WebViewStack> {
   //   return buildStack(context);
   // }
 
-  _checkBiometrics() async {
-    _hasBioSensor = await LocalAuthApi.hasBiometrics();
-  }
-
-  Future<bool> _checkAuth() async {
-    return await LocalAuthApi.authenticate();
-    //return isAuth;
-  }
-
   Widget buildStack(BuildContext context) {
     return Stack(
       //alignment: Alignment.center,
@@ -77,6 +58,15 @@ class _WebViewStackState extends State<WebViewStack> {
           ),
       ],
     );
+  }
+
+  _checkBiometrics() async {
+    _hasBioSensor = await LocalAuthApi.hasBiometrics();
+  }
+
+  Future<bool> _checkAuth() async {
+    return await LocalAuthApi.authenticate();
+    //return isAuth;
   }
 
   JavascriptChannel _appJavascriptChannel(BuildContext context) {
@@ -92,62 +82,6 @@ class _WebViewStackState extends State<WebViewStack> {
         });
   }
 
-  Future<void> _onCheckidstatus(
-      WebViewController controller, BuildContext context) async {
-    bool isAuth = await _checkAuth();
-    String jsScript =
-        'checkidStatus({checkidstatus:$isAuth, biometrics:$_hasBioSensor})';
-    await controller.runJavascript(jsScript);
-  }
-
-  Future<void> _onAddToCache(
-      WebViewController controller, BuildContext context) async {
-    await controller.runJavascript(
-        'caches.open("test_caches_entry"); localStorage["test_localStorage"] = "dummy_entry";');
-    // ignore: deprecated_member_use
-    Scaffold.of(context).showSnackBar(const SnackBar(
-      content: Text('Added a test entry to cache.'),
-    ));
-  }
-
-  // Build the javascript injection string to override css
-  Future<String> jsInjectionString(BuildContext context, String asset) async {
-    String cssOverride = await loadStringAsset(context, asset);
-    return "const appJs = document.createElement('script');"
-        "appJs.textContent = `$cssOverride`;"
-        "document.head.append(appJs);";
-  }
-
-  // Load a string asset
-  Future<String> loadStringAsset(BuildContext context, String asset) async {
-    return await DefaultAssetBundle.of(context).loadString(asset);
-  }
-
-  Future<void> _dispatchPageFinished(
-      WebViewController _webController, BuildContext context) async {
-    print('dispatchPageFinished (1)');
-    // if (!_isDispatchPageFinished) {
-    //   print('dispatchPageFinished (2)');
-
-    String appJs = await jsInjectionString(context, 'assets/app.js');
-    _webController.runJavascript(appJs);
-
-    await _webController.runJavascript(
-        'window.document.dispatchEvent(createEvent("deviceready", {hasBioSensor:$_hasBioSensor}));');
-
-    // String jsScript =
-    //     'devicepagefinished({isAvailable:$_hasBioSensor, keyusername:"savedUsername", keypassword:"savedPassword"});';
-    // // String jsScript =
-    // //     'window.document.dispatchEvent(new CustomEvent("devicepagefinished", {isAvailable:$_hasBioSensor, keyusername:savedUsername, keypassword:savedPassword}));';
-    // print('jsScript=$jsScript');
-
-    // await _webController.runJavascript(jsScript);
-
-    //_isDispatchPageFinished = true;
-    //}
-    // ignore: deprecated_member_use
-  }
-
   Widget buildWebView(BuildContext context) {
     return WebView(
       initialUrl: widget.url,
@@ -160,10 +94,6 @@ class _WebViewStackState extends State<WebViewStack> {
         setState(() {
           _webViewController = webViewController;
         });
-        // webViewController.clearCache();
-
-        //widget.controller.complete(webViewController);
-        //this._webViewController = webViewController;
       },
       onWebResourceError: (error) {
         print('***** Error: $error');
@@ -214,24 +144,6 @@ class _WebViewStackState extends State<WebViewStack> {
         } else {
           return NavigationDecision.navigate;
         }
-        // if (navigation.url.endsWith('.pdf') || navigation.url.contains('pdf')) {
-        //   File file = await DefaultCacheManager().getSingleFile(navigation.url);
-        //   var filePath = file.path;
-        //   var filesize = file.lengthSync();
-        //   print('**** file=[$filePath] ($filesize)');
-        //   //PdfView(path: file.path);
-        //   return NavigationDecision.prevent;
-        // }
-
-        // final path = Uri.parse(navigation.url).path;
-        // if (path.contains('pdf')) {
-        //   var x = WebView(
-        //     initialUrl: (navigation.url),
-        //     javascriptMode: JavascriptMode.unrestricted,
-        //   );
-        //   return NavigationDecision.prevent;
-        // }
-
         // final host = Uri.parse(navigation.url).host;
         // if (host.contains('youtube.com')) {
         //   ScaffoldMessenger.of(context).showSnackBar(
@@ -248,102 +160,47 @@ class _WebViewStackState extends State<WebViewStack> {
     );
   }
 
-  Widget buildStack0(BuildContext context) {
-    //var webView = WebView();
-    //var wc = WebChromeClient();
-    //webView. se.setWebChromeClient(new MyWebChromeClient());
-    //webView.
+  Future<void> _dispatchPageFinished(
+      WebViewController _webController, BuildContext context) async {
+    print('dispatchPageFinished (1)');
+    // if (!_isDispatchPageFinished) {
+    //   print('dispatchPageFinished (2)');
 
-    return Stack(
-      children: [
-        WebView(
-          initialUrl: widget.url,
-          zoomEnabled: true,
-          javascriptMode: JavascriptMode.unrestricted,
+    String appJs = await jsInjectionString(context, 'assets/app.js');
+    _webController.runJavascript(appJs);
 
-          //initialMediaPlaybackPolicy: AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
-
-          //pluginState: WebSettings.PluginState.ON,
-          // allowFileAccessFromFileURLs: true,
-          // allowUniversalAccessFromFileURLs: true,
-          // allowContentAccess: true,
-          // allowFileAccess: true,
-
-          onWebViewCreated: (webViewController) {
-            print('*** onWebViewCreated, $webViewController');
-            webViewController.clearCache();
-            widget.controller.complete(webViewController);
-            this._webViewController = webViewController;
-          },
-          onWebResourceError: (error) {
-            print('***** Error: $error');
-            print('*****[' +
-                error.description +
-                '] [' +
-                error.errorCode.toString() +
-                '] [' +
-                error.errorType.toString() +
-                '] [' +
-                error.failingUrl.toString() +
-                ']');
-            //widget.webViewController
-          },
-          onPageStarted: (url) {
-            if (kDebugMode) {
-              print('Page started loading: $url');
-            }
-            setState(() {
-              loadingPercentage = 0;
-            });
-          },
-          onProgress: (progress) {
-            setState(() {
-              loadingPercentage = progress;
-            });
-          },
-          onPageFinished: (url) {
-            if (kDebugMode) {
-              print('Page finished loading: $url');
-            }
-            setState(() {
-              loadingPercentage = 100;
-            });
-          },
-          navigationDelegate: (navigation) {
-            print('***navigationDelegate, $navigation');
-
-            // final path = Uri.parse(navigation.url).path;
-            // if (path.contains('pdf')) {
-            //   var x = WebView(
-            //     initialUrl: (navigation.url),
-            //     javascriptMode: JavascriptMode.unrestricted,
-            //   );
-            //   return NavigationDecision.prevent;
-            // }
-
-            // final host = Uri.parse(navigation.url).host;
-            // if (host.contains('youtube.com')) {
-            //   ScaffoldMessenger.of(context).showSnackBar(
-            //     SnackBar(
-            //       content: Text(
-            //         'Blocking navigation to $host',
-            //       ),
-            //     ),
-            //   );
-            //   return NavigationDecision.prevent;
-            // }
-            return NavigationDecision.navigate;
-          },
-        ),
-        if (loadingPercentage < 100)
-          LinearProgressIndicator(
-            value: loadingPercentage / 100.0,
-          ),
-      ],
-    );
+    await _webController.runJavascript(
+        'window.document.dispatchEvent(createEvent("deviceready", {}));'); // {hasBioSensor:$_hasBioSensor}));');
   }
 
-  // permission() async {
-  //   await Permission.storage.request();
-  // }
+  Future<void> _onCheckidstatus(
+      WebViewController controller, BuildContext context) async {
+    bool isAuth = await _checkAuth();
+    String jsScript =
+        'checkidStatus({checkidstatus:$isAuth, biometrics:$_hasBioSensor})';
+    await controller.runJavascript(jsScript);
+  }
+
+  Future<void> _onAddToCache(
+      WebViewController controller, BuildContext context) async {
+    await controller.runJavascript(
+        'caches.open("test_caches_entry"); localStorage["test_localStorage"] = "dummy_entry";');
+    // ignore: deprecated_member_use
+    Scaffold.of(context).showSnackBar(const SnackBar(
+      content: Text('Added a test entry to cache.'),
+    ));
+  }
+
+  // Build the javascript injection string
+  Future<String> jsInjectionString(BuildContext context, String asset) async {
+    String appJsScript = await loadStringAsset(context, asset);
+    return "const appJs = document.createElement('script');"
+        "appJs.textContent = `$appJsScript`;"
+        "document.head.append(appJs);";
+  }
+
+  // Load a string asset
+  Future<String> loadStringAsset(BuildContext context, String asset) async {
+    return await DefaultAssetBundle.of(context).loadString(asset);
+  }
 }

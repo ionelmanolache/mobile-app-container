@@ -1,33 +1,60 @@
-plugins = {};
-plugins.fingerprint = {};
-
-plugins.fingerprint.isAvailable = function (successCallback, errorCallback) {
-    //MobileApp.exec("isAvailable");
-    console.log('isAvailable');
-    if (true) {
-        successCallback();
-    } else {
-        errorCallback();
+var plugins = (function () {
+    function test() { }
+    function invokeMobileApp(data) {
+        MobileApp.postMessage(data);
     }
-}
-
-function invokeMobileApp(data) {
-    MobileApp.postMessage(data);
-}
-
-window.plugins.fingerprint.isAvailable(function () {
-    console.log('isAvailable=TRUE');
-}, function () {
-    console.log('isAvailable=FALSE');
-});
+    return {
+        fingerprint: {
+            currentRequest: "",
+            currentSuccessCallback: null, 
+            currentErrorCallback: null,
+           
+            isAvailable: function (successCallback, errorCallback) {
+                invokeMobileApp("isAvailable");
+                this.currentRequest = "isAvailable";
+                this.currentSuccessCallback = successCallback;
+                this.currentErrorCallback = errorCallback;
+                count=0;
+                do {
+                    setTimeout(function () {count++;}, 100);
+                  } while (count < 5);
+                
+            },
+            save: function (key, password, successCallback, errorCallback) {
+                invokeMobileApp("save;password");
+            },
+            verify: function (key, message, successCallback, errorCallback) {
+                invokeMobileApp("verify;message");
+            },
+            has: function (key, successCallback, errorCallback) {
+                invokeMobileApp("has");
+            },
+            delete: function (key, successCallback, errorCallback) {
+                invokeMobileApp("delete");
+            },
+            resp: function (m, detail) {
+                this.currentRequest = "_"+m;
+                this.currentResponse = 
+                this.currentSuccessCallback;
+                this.currentErrorCallback = errorCallback;
+            }
+        }
+    }
+})();
 
 window.document.addEventListener("deviceready", function (e) {
     console.log('EVENT deviceready, e.detail=', JSON.stringify(e.detail));
+    window.plugins.fingerprint.setBioSensor(e.detail.hasBioSensor);
 });
 
 function createEvent(type, data) {
     return new CustomEvent(type, { detail: data });
 }
+
+//==============================================================
+//==============================================================
+
+
 
 function startLogin() {
     window.document.loginForm.submit();
