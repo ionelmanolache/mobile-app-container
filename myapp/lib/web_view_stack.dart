@@ -1,13 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-//import 'package:flutter/services.dart';
-//import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-//import 'package:pdf_viewer_plugin/pdf_viewer_plugin.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-//import 'package:local_auth/local_auth.dart';
 import 'app_auth_api.dart';
+import 'check_internet.dart';
 
 class WebViewStack extends StatefulWidget {
   const WebViewStack({required this.controller, required this.url, Key? key})
@@ -22,16 +21,22 @@ class WebViewStack extends StatefulWidget {
 }
 
 class _WebViewStackState extends State<WebViewStack> {
-  bool _hasBioSensor = false;
-  bool _isDispatchPageFinished = false;
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   var loadingPercentage = 0;
   var _webViewController;
+  CheckInternet checkInternet = CheckInternet();
 
   @override
   initState() {
     super.initState();
-    //_checkBiometrics();
+    checkInternet.checkConnection(context);
+  }
+
+  @override
+  void dispose() {
+    checkInternet.listener.cancel();
+    super.dispose();
   }
 
   @override
@@ -60,28 +65,6 @@ class _WebViewStackState extends State<WebViewStack> {
     );
   }
 
-  _checkBiometrics() async {
-    _hasBioSensor = await LocalAuthApi.hasBiometrics();
-  }
-
-  Future<bool> _checkAuth() async {
-    return await LocalAuthApi.authenticate();
-    //return isAuth;
-  }
-
-  JavascriptChannel _appJavascriptChannel(BuildContext context) {
-    return JavascriptChannel(
-        name: 'MobileApp',
-        onMessageReceived: (JavascriptMessage jsmmessage) {
-          print(jsmmessage.message);
-          if (_hasBioSensor &&
-              jsmmessage.message.length == 7 &&
-              'checkid' == jsmmessage.message) {
-            _onCheckidstatus(_webViewController, context);
-          }
-        });
-  }
-
   Widget buildWebView(BuildContext context) {
     return WebView(
       initialUrl: widget.url,
@@ -90,23 +73,26 @@ class _WebViewStackState extends State<WebViewStack> {
       javascriptChannels:
           <JavascriptChannel>[_appJavascriptChannel(context)].toSet(),
       onWebViewCreated: (webViewController) {
-        print('*** onWebViewCreated, $webViewController');
+        if (kDebugMode) {
+          print('*** onWebViewCreated, $webViewController');
+        }
         setState(() {
           _webViewController = webViewController;
         });
       },
       onWebResourceError: (error) {
-        print('***** Error: $error');
-        print('*****[' +
-            error.description +
-            '] [' +
-            error.errorCode.toString() +
-            '] [' +
-            error.errorType.toString() +
-            '] [' +
-            error.failingUrl.toString() +
-            ']');
-        //widget.webViewController
+        if (kDebugMode) {
+          print('***** Error: $error');
+          print('*****[' +
+              error.description +
+              '] [' +
+              error.errorCode.toString() +
+              '] [' +
+              error.errorType.toString() +
+              '] [' +
+              error.failingUrl.toString() +
+              ']');
+        }
       },
       onPageStarted: (url) {
         if (kDebugMode) {
@@ -131,64 +117,41 @@ class _WebViewStackState extends State<WebViewStack> {
         });
 
         if (url.indexOf('ionelmanolache') > -1 ||
-            url.indexOf('fortune-login') > -1) {
+            url.indexOf('fortune-login') > -1 ||
+            url.indexOf('flatex-cfd-login') > -1 ||
+            url.indexOf('cfdapp.comdirect.de') > -1) {
           _dispatchPageFinished(this._webViewController, context);
         }
       },
       navigationDelegate: (navigation) async {
-        print('***navigationDelegate, $navigation');
+        if (kDebugMode) {
+          print('***navigationDelegate, $navigation');
+        }
         if (navigation.url.contains('documents') ||
             navigation.url.contains('pdf')) {
+          if (kDebugMode) {
+            print('*** PDF download!, $navigation');
+          }
           await launch(navigation.url);
           return NavigationDecision.prevent;
         } else {
           return NavigationDecision.navigate;
         }
-        // final host = Uri.parse(navigation.url).host;
-        // if (host.contains('youtube.com')) {
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     SnackBar(
-        //       content: Text(
-        //         'Blocking navigation to $host',
-        //       ),
-        //     ),
-        //   );
-        //   return NavigationDecision.prevent;
-        // }
-        return NavigationDecision.navigate;
       },
     );
   }
 
   Future<void> _dispatchPageFinished(
       WebViewController _webController, BuildContext context) async {
-    print('dispatchPageFinished (1)');
-    // if (!_isDispatchPageFinished) {
-    //   print('dispatchPageFinished (2)');
+    if (kDebugMode) {
+      print('dispatchPageFinished');
+    }
 
     String appJs = await jsInjectionString(context, 'assets/app.js');
     _webController.runJavascript(appJs);
 
     await _webController.runJavascript(
-        'window.document.dispatchEvent(createEvent("deviceready", {}));'); // {hasBioSensor:$_hasBioSensor}));');
-  }
-
-  Future<void> _onCheckidstatus(
-      WebViewController controller, BuildContext context) async {
-    bool isAuth = await _checkAuth();
-    String jsScript =
-        'checkidStatus({checkidstatus:$isAuth, biometrics:$_hasBioSensor})';
-    await controller.runJavascript(jsScript);
-  }
-
-  Future<void> _onAddToCache(
-      WebViewController controller, BuildContext context) async {
-    await controller.runJavascript(
-        'caches.open("test_caches_entry"); localStorage["test_localStorage"] = "dummy_entry";');
-    // ignore: deprecated_member_use
-    Scaffold.of(context).showSnackBar(const SnackBar(
-      content: Text('Added a test entry to cache.'),
-    ));
+        'window.document.dispatchEvent(createEvent("deviceready", {}));');
   }
 
   // Build the javascript injection string
@@ -202,5 +165,89 @@ class _WebViewStackState extends State<WebViewStack> {
   // Load a string asset
   Future<String> loadStringAsset(BuildContext context, String asset) async {
     return await DefaultAssetBundle.of(context).loadString(asset);
+  }
+
+//======================================================
+  Future<Map<String, dynamic>> _api_set(Map<String, dynamic> data) async {
+    bool isAuth = await _checkAuth(null);
+    if (isAuth) {
+      String key = data["key"];
+      Map<String, dynamic> value = data["value"];
+      String jsonValue = json.encode(value);
+
+      final SharedPreferences prefs = await _prefs;
+      prefs.setString(key, jsonValue);
+      return {"resp": true};
+    }
+    return {"resp": false};
+  }
+
+  Future<Map<String, dynamic>> _api_verify(Map<String, dynamic> data) async {
+    var key = data["key"].toString();
+    var usermessage = data["usermessage"].toString();
+    bool isAuth = await _checkAuth(usermessage);
+    final SharedPreferences prefs = await _prefs;
+    String value = (prefs.getString(key) ?? "");
+    return (isAuth && value.trim().length > 0) ? {"resp": value} : {};
+  }
+
+  Future<Map<String, dynamic>> _api_has(Map<String, dynamic> data) async {
+    var key = data["key"].toString();
+    final SharedPreferences prefs = await _prefs;
+    String value = (prefs.getString(key) ?? "");
+    bool hasValue = value.trim().length > 0;
+    return {"resp": hasValue};
+  }
+
+  Future<Map<String, dynamic>> _api_delete(Map<String, dynamic> data) async {
+    var key = data["key"].toString();
+    final SharedPreferences prefs = await _prefs;
+    bool value = await prefs.remove(key);
+    return {"resp": value};
+  }
+
+  Future<Map<String, dynamic>> _api_isavailable(
+      Map<String, dynamic> data) async {
+    bool value = await _checkBiometrics();
+    return {"resp": value};
+  }
+
+  //======================================================
+  Future<bool> _checkBiometrics() async {
+    return await LocalAuthApi.hasBiometrics();
+  }
+
+  Future<bool> _checkAuth(final String? userMessage) async {
+    return await LocalAuthApi.authenticate(userMessage);
+  }
+
+  //======================================================
+  get _functions => <String, Function>{
+        "has": _api_has,
+        "setvalue": _api_set,
+        "verify": _api_verify,
+        "delete": _api_delete,
+        "isavailable": _api_isavailable
+      };
+
+  JavascriptChannel _appJavascriptChannel(BuildContext context) {
+    return JavascriptChannel(
+        name: 'MobileApp',
+        onMessageReceived: (JavascriptMessage msg) async {
+          String jsMsg = msg.message;
+          if (kDebugMode) {
+            print("(1) onMessageReceived=$jsMsg");
+          }
+
+          Map<String, dynamic> message = jsonDecode(jsMsg);
+          final respData = await _functions[message["api"]](message["data"]);
+
+          message["data"] = respData;
+          var respJson = jsonEncode(message);
+          String jscript =
+              'window.plugins.fingerprint.receiveMessage($respJson)';
+
+          await _webViewController.runJavascript(jscript);
+        });
   }
 }

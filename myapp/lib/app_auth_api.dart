@@ -12,14 +12,14 @@ class LocalAuthApi {
     }
   }
 
-  static Future<bool> authenticate() async {
-    final biometricOnly = await hasBiometrics();
+  static Future<bool> authenticate(final String? reason) async {
+    //final biometricOnly = await hasBiometrics();
     //if (!isAvailable) return false;
 
     try {
       return await _auth.authenticate(
-          localizedReason: 'Scan Fingerprint to access the app',
-          biometricOnly: biometricOnly,
+          localizedReason: reason ?? 'Please authenticate to access the app',
+          //biometricOnly: false, //biometricOnly,
           useErrorDialogs: true,
           stickyAuth: true);
     } on PlatformException catch (e) {
