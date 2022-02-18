@@ -60,7 +60,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget buildWebViewStack(BuildContext context) {
     return WebViewStack(
-        controller: controller, url: EnvironmentConfig.brokerUrl);
+        /*controller: controller, */ url: EnvironmentConfig.brokerUrl);
   }
 
   // JavascriptChannel _fingerprintJavascriptChannel(BuildContext context) {

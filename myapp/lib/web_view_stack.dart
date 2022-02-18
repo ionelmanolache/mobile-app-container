@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:myapp/app_js_channel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -9,33 +11,37 @@ import 'app_auth_api.dart';
 import 'check_internet.dart';
 
 class WebViewStack extends StatefulWidget {
-  const WebViewStack({required this.controller, required this.url, Key? key})
-      : super(key: key);
+  WebViewStack({required this.url, Key? key}) : super(key: key);
 
   final String url;
 
-  final Completer<WebViewController> controller;
+  final waitMillisWhenPageFinished = Platform.isAndroid
+      ? Duration(milliseconds: 100)
+      : Duration(milliseconds: 1000);
+
+  final controller = Completer<WebViewController>();
 
   @override
   _WebViewStackState createState() => _WebViewStackState();
 }
 
 class _WebViewStackState extends State<WebViewStack> {
+  int _loadingPercentage = 0;
+  final _checkInternet = CheckInternet();
+  final _appJsChannel = AppJavascriptChannel();
   final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-
-  var loadingPercentage = 0;
-  var _webViewController;
-  CheckInternet checkInternet = CheckInternet();
 
   @override
   initState() {
     super.initState();
-    checkInternet.checkConnection(context);
+    _checkInternet.checkConnection(context);
   }
 
   @override
   void dispose() {
-    checkInternet.listener.cancel();
+    debugPrint('dispose');
+
+    _checkInternet.listener.cancel();
     super.dispose();
   }
 
@@ -47,40 +53,69 @@ class _WebViewStackState extends State<WebViewStack> {
     })));
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   return buildStack(context);
-  // }
+/*
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        body: Center(
+      child: buildStack(context),
+    ));
+  }
+*/
+/*
+  @override
+  Widget build(BuildContext context) {
+    return buildStack(context);
+  }
+*/
 
   Widget buildStack(BuildContext context) {
     return Stack(
       //alignment: Alignment.center,
       children: [
-        buildWebView(context),
-        if (loadingPercentage < 100)
+        ...buidlWidgets(),
+        //if (_loadingPercentage < 100) Text("Loading ..."),
+        if (_loadingPercentage < 100)
           LinearProgressIndicator(
-            value: loadingPercentage / 100.0,
+            value: _loadingPercentage / 100.0,
           ),
       ],
     );
   }
 
+  Set<Widget> buidlWidgets() {
+    Set<Widget> widgets = Set();
+    widgets.add(buildWebView(context));
+    if (kDebugMode) {
+      Widget w = FloatingActionButton(
+          child: Icon(Icons.import_export, size: 32),
+          onPressed: () async {
+            _appJsChannel.sendDeviceready(await widget.controller.future);
+          });
+      widgets.add(w);
+    }
+    return widgets;
+  }
+
   Widget buildWebView(BuildContext context) {
+    SurfaceAndroidWebView;
     return WebView(
       initialUrl: widget.url,
       javascriptMode: JavascriptMode.unrestricted,
       zoomEnabled: true,
+      debuggingEnabled: true,
       javascriptChannels:
           <JavascriptChannel>[_appJavascriptChannel(context)].toSet(),
       onWebViewCreated: (webViewController) {
         if (kDebugMode) {
           print('*** onWebViewCreated, $webViewController');
         }
-        setState(() {
-          _webViewController = webViewController;
-        });
+        //isAppJsLoaded = false;
+        webViewController.clearCache();
+        widget.controller.complete(webViewController);
       },
       onWebResourceError: (error) {
+        widget.controller.completeError(error);
         if (kDebugMode) {
           print('***** Error: $error');
           print('*****[' +
@@ -99,12 +134,12 @@ class _WebViewStackState extends State<WebViewStack> {
           print('Page started loading: $url');
         }
         setState(() {
-          loadingPercentage = 0;
+          _loadingPercentage = 0;
         });
       },
       onProgress: (progress) {
         setState(() {
-          loadingPercentage = progress;
+          _loadingPercentage = progress;
         });
       },
       onPageFinished: (url) {
@@ -113,14 +148,17 @@ class _WebViewStackState extends State<WebViewStack> {
           print('Page finished loading: $url');
         }
         setState(() {
-          loadingPercentage = 100;
+          _loadingPercentage = 100;
         });
 
         if (url.indexOf('ionelmanolache') > -1 ||
             url.indexOf('fortune-login') > -1 ||
             url.indexOf('flatex-cfd-login') > -1 ||
             url.indexOf('cfdapp.comdirect.de') > -1) {
-          _dispatchPageFinished(this._webViewController, context);
+          //
+          _appJsChannel.setupJavascriptChannel(
+              context, widget.controller, widget.waitMillisWhenPageFinished);
+          //
         }
       },
       navigationDelegate: (navigation) async {
@@ -134,42 +172,15 @@ class _WebViewStackState extends State<WebViewStack> {
           }
           await launch(navigation.url);
           return NavigationDecision.prevent;
-        } else {
-          return NavigationDecision.navigate;
         }
+        return NavigationDecision.navigate;
       },
     );
   }
 
-  Future<void> _dispatchPageFinished(
-      WebViewController _webController, BuildContext context) async {
-    if (kDebugMode) {
-      print('dispatchPageFinished');
-    }
-
-    String appJs = await jsInjectionString(context, 'assets/app.js');
-    _webController.runJavascript(appJs);
-
-    await _webController.runJavascript(
-        'window.document.dispatchEvent(createEvent("deviceready", {}));');
-  }
-
-  // Build the javascript injection string
-  Future<String> jsInjectionString(BuildContext context, String asset) async {
-    String appJsScript = await loadStringAsset(context, asset);
-    return "const appJs = document.createElement('script');"
-        "appJs.textContent = `$appJsScript`;"
-        "document.head.append(appJs);";
-  }
-
-  // Load a string asset
-  Future<String> loadStringAsset(BuildContext context, String asset) async {
-    return await DefaultAssetBundle.of(context).loadString(asset);
-  }
-
 //======================================================
   Future<Map<String, dynamic>> _api_set(Map<String, dynamic> data) async {
-    bool isAuth = await _checkAuth(null);
+    bool isAuth = await LocalAuthApi.authenticate(null);
     if (isAuth) {
       String key = data["key"];
       Map<String, dynamic> value = data["value"];
@@ -185,7 +196,7 @@ class _WebViewStackState extends State<WebViewStack> {
   Future<Map<String, dynamic>> _api_verify(Map<String, dynamic> data) async {
     var key = data["key"].toString();
     var usermessage = data["usermessage"].toString();
-    bool isAuth = await _checkAuth(usermessage);
+    bool isAuth = await LocalAuthApi.authenticate(usermessage);
     final SharedPreferences prefs = await _prefs;
     String value = (prefs.getString(key) ?? "");
     return (isAuth && value.trim().length > 0) ? {"resp": value} : {};
@@ -208,17 +219,8 @@ class _WebViewStackState extends State<WebViewStack> {
 
   Future<Map<String, dynamic>> _api_isavailable(
       Map<String, dynamic> data) async {
-    bool value = await _checkBiometrics();
+    bool value = await LocalAuthApi.hasBiometrics();
     return {"resp": value};
-  }
-
-  //======================================================
-  Future<bool> _checkBiometrics() async {
-    return await LocalAuthApi.hasBiometrics();
-  }
-
-  Future<bool> _checkAuth(final String? userMessage) async {
-    return await LocalAuthApi.authenticate(userMessage);
   }
 
   //======================================================
@@ -247,7 +249,8 @@ class _WebViewStackState extends State<WebViewStack> {
           String jscript =
               'window.plugins.fingerprint.receiveMessage($respJson)';
 
-          await _webViewController.runJavascript(jscript);
+          final ctrl = await widget.controller.future;
+          ctrl.runJavascript(jscript);
         });
   }
 }

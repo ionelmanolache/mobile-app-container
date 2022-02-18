@@ -4,7 +4,9 @@ function createEvent(type, data) {
 }
 
 var plugins = (function () {
+    console.log('hello plugin!');
     function _invokeMobileApp(api, data, successCallback, errorCallback) {
+        console.log('invokeMobileApp, ', api, JSON.stringify(data));
         successCallbacks[api] = successCallback;
         errorCallbacks[api] = errorCallback;
         data = JSON.stringify({
@@ -12,7 +14,7 @@ var plugins = (function () {
             data: data || {},
         });
         MobileApp.postMessage(data);
-        console.log("done _invokeMobileApp, ", api, data);
+        console.log('done _invokeMobileApp, ', api, data);
     }
     function _receiveMessage(msg) {
         console.log('receiveMessage, ', JSON.stringify(msg));
@@ -32,24 +34,24 @@ var plugins = (function () {
         }
     }
     function _isAvailable(successCallback, errorCallback) {
-        _invokeMobileApp("isavailable", {}, successCallback, errorCallback);
+        _invokeMobileApp('isavailable', {}, successCallback, errorCallback);
     }
     function _save(key, password, successCallback, errorCallback) {
         var value = JSON.parse(password);
-        var data = { "key": key, value };
+        var data = { 'key': key, value };
         _invokeMobileApp("setvalue", data, successCallback, errorCallback);
     }
     function _verify(key, message, successCallback, errorCallback) {
-        var data = { "key": key, "usermessage": message };
-        _invokeMobileApp("verify", data, successCallback, errorCallback);
+        var data = { 'key': key, 'usermessage': message };
+        _invokeMobileApp('verify', data, successCallback, errorCallback);
     }
     function _has(key, successCallback, errorCallback) {
-        var data = { "key": key };
-        _invokeMobileApp("has", data, successCallback, errorCallback);
+        var data = { 'key': key };
+        _invokeMobileApp('has', data, successCallback, errorCallback);
     }
     function _delete(key, successCallback, errorCallback) {
-        var data = { "key": key };
-        _invokeMobileApp("delete", data, successCallback, errorCallback);
+        var data = { 'key': key };
+        _invokeMobileApp('delete', data, successCallback, errorCallback);
     }
     var successCallbacks = {};
     var errorCallbacks = {};

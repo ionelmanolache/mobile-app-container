@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'brokers_page.dart';
 import 'home.dart';
 
-Future<void> main() async {
+const Color darkBlue = Color.fromARGB(255, 18, 32, 47);
+
+void main() {
   runApp(const MyApp());
 }
 //void main() => runApp(const MaterialApp(home: const BrokersPage()));
@@ -14,20 +16,32 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: const BrokersPage(),
-    );
+        title: "CFD2",
+        theme: appThemeLight(),
+        /*
+        theme: ThemeData.light().copyWith(
+          scaffoldBackgroundColor: Colors.blue,
+        ),
+        */
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          appBar: AppBar(title: Text("mIFE")),
+          // body: SafeArea(child: Builder(builder: (BuildContext context) {
+          //   return const BrokersPage();
+          // })),
+          body: Center(
+            child: const BrokersPage(),
+          ),
+        ));
+  }
+
+  ThemeData appThemeLight() {
+    return ThemeData.light().copyWith(
+        // scaffoldBackgroundColor: Colors.blue,
+        primaryColor: Colors.blue);
+  }
+
+  ThemeData appTheme() {
+    return ThemeData(brightness: Brightness.light, primarySwatch: Colors.blue);
   }
 }

@@ -16,7 +16,8 @@ class _BrokersPageState extends State<BrokersPage> {
   var _brokers = {
     'dev': 'https://ionelmanolache.github.io/',
     'comdirect-PROD': 'https://cfdapp.comdirect.de/lp/cfdapp/login',
-    'flatex-PROD': 'https://konto.flatex.de/flatex-cfd-login/',
+    'flatex-PROD':
+        'https://konto.flatex.de/flatex-cfd-login/', //loginFormAction.do',
     'prelive2-mIFEv1':
         'https://cfd2.staging.sgmarkets.com/fortune-web-server/static/fortune-login/mobilelogin.html',
     'prelive2-login':
@@ -103,6 +104,6 @@ class _BrokersPageState extends State<BrokersPage> {
         context,
         MaterialPageRoute(
             builder: (context) =>
-                WebViewStack(controller: _controller, url: url)));
+                WebViewStack(/*controller: _controller, */ url: url)));
   }
 }

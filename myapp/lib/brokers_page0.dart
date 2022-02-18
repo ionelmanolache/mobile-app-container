@@ -150,7 +150,7 @@ class _BrokersPageState extends State<BrokersPage> {
         context,
         MaterialPageRoute(
             builder: (context) =>
-                WebViewStack(controller: _controller, url: url)));
+                WebViewStack(/*controller: _controller,*/ url: url)));
   }
 
   // Widget buildBrokers() {
